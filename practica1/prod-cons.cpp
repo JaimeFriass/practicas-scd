@@ -24,6 +24,9 @@ const unsigned
   tam_vector = 10 ;    // tamaño del vector, debe ser menor que el número de items
 int buf[tam_vector];
 int cont = 0;
+sem_t puede_producir = 1;
+sem_t puede_consumir = 0;
+sem_t mutex = 1;
 
 // ---------------------------------------------------------------------
 // introduce un retraso aleatorio de duración comprendida entre
@@ -54,7 +57,7 @@ unsigned producir_dato()
   return contador ;
 }
 // ---------------------------------------------------------------------
-// función que simula la consumición de un dato
+// función que simula la  consumición de un dato
 
 void consumir_dato( int dato )
 {
@@ -69,12 +72,12 @@ void * funcion_productor( void * )
   for( unsigned i = 0 ; i < num_items ; i++ )
   {
     int dato = producir_dato() ;
-    buf[cont] = dato;
-    cont++;
-    // falta aquí: insertar "dato" en el vector o buffer
-    // ................ ya no
-
     
+    buf[cont] = dato;
+    
+    sem_post(&puede_consumir);
+    cont++;
+    // insertar "dato" en el vector o buffer
     cout << "Productor : dato insertado: " << dato << endl << flush ;
   }
   return NULL ;
@@ -87,12 +90,11 @@ void * funcion_consumidor( void * )
   for( unsigned i = 0 ; i < num_items ; i++ )
   {
     int dato ;
+    sem_wait(&puede_consumir);
     dato = buf[i];
-    cont--;
-
-    // falta aquí: leer "dato" desde el vector intermedio
-    // .................
+    sem_post(&puede_producir);
     cout << "Consumidor:                              dato extraído : " << dato << endl << flush ;
+    cont--;
     consumir_dato( dato ) ;
   }
   return NULL ;
@@ -101,9 +103,18 @@ void * funcion_consumidor( void * )
 
 int main()
 {
-
-  // falta: crear y poner en marcha las hebras, esperar que terminen
-  // ....
+  pthread_t hebra_productora, hebra_consumidora;
+  sem_init(&puede_producir, 0, 1);
+  sem_init(&puede_consumir, 0, 0);
+  
+  pthread_create(&hebra1, NULL, funcion_productor, NULL);
+  pthread_create(&hebra2, NULL, funcion_consumidor, NULL);
+  
+  pthread_join( &hebra_productora, NULL);
+  pthread_join( &hebra_consumidora, NULL);
+  
+  sem_destroy( &puede_producir);
+  sem_destroy( &puede_consumir);
 
    return 0 ;
 }
