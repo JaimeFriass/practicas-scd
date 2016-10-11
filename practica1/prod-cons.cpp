@@ -23,9 +23,9 @@ const unsigned
   num_items  = 40 ,    // numero total de items que se producen o consumen
   tam_vector = 10 ;    // tamaño del vector, debe ser menor que el número de items
 int buf[tam_vector];
-int cont = 0;
-sem_t puede_producir = 1;
-sem_t puede_consumir = 0;
+int cont = 1;
+sem_t puede_producir;
+sem_t puede_consumir;
 sem_t mutex = 1;
 
 // ---------------------------------------------------------------------
