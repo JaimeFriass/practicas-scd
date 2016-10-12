@@ -26,7 +26,7 @@ int buf[tam_vector];
 int cont = 1;
 sem_t puede_producir;
 sem_t puede_consumir;
-sem_t mutex = 1;
+sem_t mutex;
 
 // ---------------------------------------------------------------------
 // introduce un retraso aleatorio de duración comprendida entre
@@ -50,7 +50,7 @@ void retraso_aleatorio( const float smin, const float smax )
 
 unsigned producir_dato()
 {
-  static int contador = 0 ;
+  static int contador = 0 ;	
   contador = contador + 1 ;
   retraso_aleatorio( 0.1, 0.5 );
   cout << "Productor : dato producido: " << contador << endl << flush ;
@@ -67,35 +67,43 @@ void consumir_dato( int dato )
 // ---------------------------------------------------------------------
 // función que ejecuta la hebra del productor
 
-void * funcion_productor( void * )
+void * funcion_productor( void * p)
 {
   for( unsigned i = 0 ; i < num_items ; i++ )
   {
     int dato = producir_dato() ;
-    
-    buf[cont] = dato;
-    
+    sem_wait(&puede_producir);
+    buf[cont] = dato; // inserta el valor en el buffer
+
+    sem_wait(&mutex);
+    cout << "Productor : dato insertado: " << dato << endl << flush ;
+    sem_post(&mutex);
+
     sem_post(&puede_consumir);
     cont++;
-    // insertar "dato" en el vector o buffer
-    cout << "Productor : dato insertado: " << dato << endl << flush ;
+
   }
   return NULL ;
 }
 // ---------------------------------------------------------------------
 // función que ejecuta la hebra del consumidor
 
-void * funcion_consumidor( void * )
+void * funcion_consumidor( void * p )
 {
   for( unsigned i = 0 ; i < num_items ; i++ )
   {
-    int dato ;
+    int dato;
+    
     sem_wait(&puede_consumir);
     dato = buf[i];
-    sem_post(&puede_producir);
-    cout << "Consumidor:                              dato extraído : " << dato << endl << flush ;
-    cont--;
+    sem_wait(&mutex);
     consumir_dato( dato ) ;
+    cout << "Consumidor:                              dato extraído : " << dato << endl << flush ;
+    sem_post(&mutex);
+
+    sem_post(&puede_producir);
+    cont--;
+
   }
   return NULL ;
 }
@@ -104,17 +112,20 @@ void * funcion_consumidor( void * )
 int main()
 {
   pthread_t hebra_productora, hebra_consumidora;
-  sem_init(&puede_producir, 0, 1);
-  sem_init(&puede_consumir, 0, 0);
+
+  sem_init( &mutex,         0, 1 ); // semáforo para EM: inicializado a 1
+  sem_init(&puede_producir, 0, 1);  // inicialmente se puede producir
+  sem_init(&puede_consumir, 0, 0);  // inicialmente no se puede consumir
   
-  pthread_create(&hebra1, NULL, funcion_productor, NULL);
-  pthread_create(&hebra2, NULL, funcion_consumidor, NULL);
+  pthread_create(&hebra_productora, NULL, funcion_productor, NULL);
+  pthread_create(&hebra_consumidora, NULL, funcion_consumidor, NULL);
   
-  pthread_join( &hebra_productora, NULL);
-  pthread_join( &hebra_consumidora, NULL);
+  pthread_join( hebra_productora, NULL);
+  pthread_join( hebra_consumidora, NULL);
   
   sem_destroy( &puede_producir);
   sem_destroy( &puede_consumir);
+  sem_destroy( &mutex );
 
    return 0 ;
 }
