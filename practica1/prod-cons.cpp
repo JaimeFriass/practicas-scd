@@ -23,7 +23,7 @@ const unsigned
   num_items  = 40 ,    // numero total de items que se producen o consumen
   tam_vector = 10 ;    // tamaño del vector, debe ser menor que el número de items
 int buf[tam_vector];
-int cont = 1;
+int cont = 0;
 sem_t puede_producir;
 sem_t puede_consumir;
 sem_t mutex;
@@ -71,16 +71,15 @@ void * funcion_productor( void * p)
 {
   for( unsigned i = 0 ; i < num_items ; i++ )
   {
-    int dato = producir_dato() ;
-    sem_wait(&puede_producir);
-    buf[cont] = dato; // inserta el valor en el buffer
+		 sem_wait(&puede_producir);
+		 int dato = producir_dato() ;
+		 sem_wait(&mutex);
+		 buf[cont] = dato; // Inserta el valor en el buffer
+ 		 cont++;
+		 sem_post(&mutex);
+		 cout << "Productor : dato insertado: " << dato << endl << flush ;
 
-    sem_wait(&mutex);
-    cout << "Productor : dato insertado: " << dato << endl << flush ;
-    sem_post(&mutex);
-
-    sem_post(&puede_consumir);
-    cont++;
+	    sem_post(&puede_consumir);
 
   }
   return NULL ;
@@ -90,19 +89,21 @@ void * funcion_productor( void * p)
 
 void * funcion_consumidor( void * p )
 {
+	int dato;
   for( unsigned i = 0 ; i < num_items ; i++ )
   {
-    int dato;
     
     sem_wait(&puede_consumir);
-    dato = buf[i];
-    sem_wait(&mutex);
-    consumir_dato( dato ) ;
-    cout << "Consumidor:                              dato extraído : " << dato << endl << flush ;
-    sem_post(&mutex);
-
+  
+	 sem_wait(&mutex);
+	 cont--;
+	 dato = buf[cont];      // Consigue el dato desde el búfer
+ 	 sem_post(&mutex);
+	 consumir_dato( dato ) ;
+	 cout << "Consumidor:" << "                          dato extraído : " << dato << endl << flush ;
+	
     sem_post(&puede_producir);
-    cont--;
+  
 
   }
   return NULL ;
@@ -114,7 +115,7 @@ int main()
   pthread_t hebra_productora, hebra_consumidora;
 
   sem_init( &mutex,         0, 1 ); // semáforo para EM: inicializado a 1
-  sem_init(&puede_producir, 0, 1);  // inicialmente se puede producir
+  sem_init(&puede_producir, 0, tam_vector);  // inicialmente se puede producir
   sem_init(&puede_consumir, 0, 0);  // inicialmente no se puede consumir
   
   pthread_create(&hebra_productora, NULL, funcion_productor, NULL);
