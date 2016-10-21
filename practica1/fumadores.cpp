@@ -1,7 +1,6 @@
 // *****************************************************************************
 //
-// Prácticas de SCD. Práctica 1.
-// Plantilla de código para el ejercicio de los fumadores
+// Prácticas de SCD. Práctica 1. Jaime Frías
 //
 // *****************************************************************************
 
@@ -18,14 +17,8 @@ using namespace std ;
 // código o para modificar este si hubiera más fumadores.
 sem_t fumador[3],
       estanquero;
+int ingrediente; // Cada ingrediente será asociado a un fumador, ya que cada uno necesita sólo 1.
 
-// Fumador 0 necesita CERILLAS.
-// Fumador 1 necesita TABACO.
-// Fumador 2 necesita PAPEL.
-
-// INGREDIENTES:
-// 1 -> PAPEL | 2 -> TABACO | 3 -> CERILLAS
-int ingrediente;
 
 
 // ---------------------------------------------------------------------
@@ -68,7 +61,7 @@ void  *fumar( void * num_fumador )
 
 
 void * producir( void * ) {
-   const string productos[] = {"papel", "cerillas", "tabaco"};
+   const string productos[] = {"papel", "cerillas", "tabaco"};  // Array de strings para imprimir en pantalla los ingredientes.
    while(1) {
       sem_wait(&estanquero);
       ingrediente = rand()%3; // Se genera un número aleatorio entre 0 y 2 para elegir un ingrediente
@@ -77,29 +70,21 @@ void * producir( void * ) {
    }
 
 }
-         
-   
-// ----------------------------------------------------------------------------
-
-// falta: resto de funciones
-// ..............
-
-// ----------------------------------------------------------------------------
 
 int main()
 {
    srand( time(NULL) ); // inicializa semilla aleatoria para selección aleatoria de fumador
-  // falta: creación hebras ....
+      
    pthread_t fumadores[3], estanquero_p;
 
-   for (int i= 0; i < 3; i++) {
+   for (int i= 0; i < 3; i++) {     // Inicialización de semáforos
       sem_init(&fumador[i], 0, 0);
    }
    sem_init(&estanquero, 0, 1);
 
 
-   for (unsigned long i = 0; i < 3; i++) {
-      void * argumento = (void *) i;
+   for (unsigned long i = 0; i < 3; i++) {      // Creación de hebras
+      void * argumento = (void *) i;      // Al necesitar como argumento un puntero, se convierte el unsigned long a puntero.
       pthread_create(&fumadores[i], NULL, fumar, argumento);
    }
    pthread_create(&estanquero_p, NULL, producir, NULL);
