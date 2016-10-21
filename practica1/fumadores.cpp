@@ -14,6 +14,19 @@
 #include <stdlib.h>    // incluye "rand(...)" y "srand"
 
 using namespace std ;
+// Se crean los semáforos, utilizamos un array para los fumadores por simplificar el
+// código o para modificar este si hubiera más fumadores.
+sem_t fumador[3],
+      estanquero;
+
+// Fumador 0 necesita CERILLAS.
+// Fumador 1 necesita TABACO.
+// Fumador 2 necesita PAPEL.
+
+// INGREDIENTES:
+// 1 -> PAPEL | 2 -> TABACO | 3 -> CERILLAS
+int ingrediente;
+
 
 // ---------------------------------------------------------------------
 // introduce un retraso aleatorio de duración comprendida entre
@@ -37,12 +50,35 @@ void retraso_aleatorio( const float smin, const float smax )
 // recibe como parámetro el numero de fumador
 // el tiempo que tarda en fumar está entre dos y ocho décimas de segundo.
 
-void fumar( int num_fumador )
-{
-   cout << "Fumador número " << num_fumador << ": comienza a fumar." << endl << flush ;
-   retraso_aleatorio( 0.2, 0.8 );
-   cout << "Fumador número " << num_fumador << ": termina de fumar." << endl << flush ;
+void  *fumar( void * num_fumador )
+{  
+
+   unsigned long argumento = (unsigned long) num_fumador;
+   
+   while(true) {
+      sem_wait(&fumador[argumento]);
+
+      cout << "Fumador número " << argumento << ": comienza a fumar." << endl << flush ;
+      sem_post(&estanquero);
+      retraso_aleatorio( 0.2, 0.8 );
+      cout << "Fumador número " << argumento << ": termina de fumar." << endl << flush ;
+
+   }
 }
+
+
+void * producir( void * ) {
+   const string productos[] = {"papel", "cerillas", "tabaco"};
+   while(1) {
+      sem_wait(&estanquero);
+      ingrediente = rand()%3; // Se genera un número aleatorio entre 0 y 2 para elegir un ingrediente
+      cout << "Estanquero produce: " << productos[ingrediente] << endl << flush ;
+      sem_post(&fumador[ingrediente]);
+   }
+
+}
+         
+   
 // ----------------------------------------------------------------------------
 
 // falta: resto de funciones
@@ -52,8 +88,30 @@ void fumar( int num_fumador )
 
 int main()
 {
-  srand( time(NULL) ); // inicializa semilla aleatoria para selección aleatoria de fumador
+   srand( time(NULL) ); // inicializa semilla aleatoria para selección aleatoria de fumador
   // falta: creación hebras ....
+   pthread_t fumadores[3], estanquero_p;
 
+   for (int i= 0; i < 3; i++) {
+      sem_init(&fumador[i], 0, 0);
+   }
+   sem_init(&estanquero, 0, 1);
+
+
+   for (unsigned long i = 0; i < 3; i++) {
+      void * argumento = (void *) i;
+      pthread_create(&fumadores[i], NULL, fumar, argumento);
+   }
+   pthread_create(&estanquero_p, NULL, producir, NULL);
+
+   for (int i = 0; i < 3; i++) {
+      pthread_join(fumadores[i], NULL);
+   }
+   pthread_join(estanquero_p, NULL);
+
+   for (int i = 0; i < 3; i++)
+      sem_destroy(&fumador[i]);
+   sem_destroy(&estanquero);
+   
   return 0 ;
 }
