@@ -1,8 +1,8 @@
 // *****************************************************************************
 //
 // Prácticas de SCD. Práctica 1.
-// Plantilla de código para el ejercicio del productor-consumidor con
-// buffer intermedio.
+// Problema del productor-consumidor con buffer intermedio
+// Jaime Frías Funes
 //
 // *****************************************************************************
 
@@ -71,15 +71,14 @@ void * funcion_productor( void * p)
 {
   for( unsigned i = 0 ; i < num_items ; i++ )
   {
-		 sem_wait(&puede_producir);
-		 int dato = producir_dato() ;
-		 sem_wait(&mutex);
-		 buf[cont] = dato; // Inserta el valor en el buffer
- 		 cont++;
-		 sem_post(&mutex);
-		 cout << "Productor : dato insertado: " << dato << endl << flush ;
-
-	    sem_post(&puede_consumir);
+	sem_wait(&puede_producir);
+	int dato = producir_dato() ;
+	sem_wait(&mutex);
+	buf[cont] = dato; // Inserta el valor en el buffer
+ 	cont++;
+	sem_post(&mutex);
+	cout << "Productor : dato insertado: " << dato << endl << flush ;
+	sem_post(&puede_consumir);
 
   }
   return NULL ;
