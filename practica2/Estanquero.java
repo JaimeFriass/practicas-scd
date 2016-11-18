@@ -1,76 +1,54 @@
+
+/*
+Se escribirá una clase hebra Estanquero y otra Fumador . De esta
+última habrá tres instancias, cada una almacenará el número de
+ingrediente que necesita (o lo que es equivalente: el número de
+fumador), que se proporcionará en el constructor.
+
+La interacción entre los fumadores y el estanquero será resuelta
+mediante un monitor Estanco basado en el paquete monitor .
+*/
+
 import monitor.* ;
 
-// ****************************************************************************
-
-class MonitorLE extends AbstractMonitor 
-{ 
-  private int       num_lectores = 0 ;
-  private boolean   escribiendo  = false ;
-  private Condition lectura      = makeCondition();
-  private Condition escritura    = makeCondition();
-
-  public void inicio_lectura() 
-  { 
-    enter();
-    if (escribiendo) 
-      lectura.await();
-    num_lectores++; 
-    lectura.signal(); 
-    leave(); 
-  }
-  public void fin_lectura() 
-  { 
-    enter();
-    num_lectores--; 
-    if (num_lectores==0) 
-      escritura.signal(); 
-    leave(); 
-  }
-  public void inicio_escritura() 
-  { 
-    enter();
-    if ( num_lectores>0 || escribiendo ) 
-      escritura.await();
-    escribiendo=true;
-    leave(); 
-  }
-  public void fin_escritura() // prio. lect
-  { 
-    enter();
-    escribiendo=false;
-    if (lectura.isEmpty()) 
-      escritura.signal();
-    else 
-      lectura.signal(); 
-    leave(); 
-  }
-} // fin clase monitor "Lect\_Esc"
-
-
-
-// ****************************************************************************
-
 class Estanco extends AbstractMonitor {
-	...
+	private int numero_ingrediente;
+	public Boolean puede_consumir;
+
+	public Boolean 
+
+	// invocado por cada fumador, indicando su ingrediente o numero
 	public void obtenerIngrediente (int miIngrediente) {
-		
+		enter();
+		if (puede_consumir)
+			
+		leave();
 	}
 
+	// invocado por el estanquero, indicando el ingrediente que pone
 	public void ponerIngrediente (int ingrediente) {
-	...
+		enter();
+
+		leave();
 	}
 
+	// invocado por el estanquero
 	public void esperarRecogidaIngrediente() {
-	...
+		enter();
+
+		leave();
 	}
 }
 
+// Cada instancia de la hebra de fumador guarda su número de fumador
+// (el número de ingrediente que necesita).
 class Fumador implements Runnable {
 	int miIngrediente;
 	public Thread thr;
 	...
 	public Fumador (int p_miIngrediente, ... ) {
-	...
+		miIngrediente = p_miIngrediente;
+		thr = new Thread(this, "fumador" + miIngrediente);
 	}
 
 	public void run() {
@@ -81,6 +59,7 @@ class Fumador implements Runnable {
 	}
 }
 
+// El estanquero continuamente produce ingredientes y espera a que se recojan.
 class Estanquero implements Runnable {
 	public Thread thr;
 	...
@@ -149,6 +128,12 @@ class Escritor implements Runnable
 
 // ****************************************************************************
 
+
+class Main
+{
+	public static void main(String[] args) {
+		
+
 class Main
 { 
   public static void main(String[] args) 
@@ -184,5 +169,4 @@ class Main
   }
 }
 // ****************************************************************************
-
 
