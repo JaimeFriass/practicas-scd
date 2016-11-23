@@ -14,13 +14,13 @@ import monitor.* ;
 
 class MonitorFum extends AbstractMonitor {
 
-	public static int ing = null;
-	private Condition fumar[];
+	public static int ing = -1;
+	private Condition[] fumar;
 	private Condition poner;
 
 	public MonitorFum() {
 		fumar = new Condition[3];
-		poner = makeConditioN();
+		poner = makeCondition();
 
 		for (int i = 0; i < 3; i++) {
 			fumar[i] = makeCondition();
@@ -32,11 +32,11 @@ class MonitorFum extends AbstractMonitor {
 		enter();
 			if (ing != miIngrediente) {
 				System.out.println("Fumador " + miIngrediente + " no puede fumar aún.");
-				fumar.get(miIngrediente).wait();
+				fumar.get(miIngrediente).await();
 			}
 
 			System.out.println("Fumador " + miIngrediente + " comienza a fumar.");
-			ing = null;
+			ing = -1;
 			poner.signal();
 		leave();
 	}
@@ -44,7 +44,7 @@ class MonitorFum extends AbstractMonitor {
 	// invocado por el estanquero, indicando el ingrediente que pone
 	public void ponerIngrediente (int ingrediente) {
 		enter();
-			if (ing != null)
+			if (ing != -1)
 				poner.wait();
 			ing = ingrediente;
 			System.out.println("Estanquero pone el ingrediente " + ing + ".");
@@ -139,7 +139,7 @@ class Main {
 		MonitorFum monitor = new MonitorFum();
 
 		// Numero de iteraciones:
-		int iteraciones = Integer.parseInt(args[0]);
+		int iteraciones = Integer.parseInt(args[0]); // pasamos a entero el argumento
 
 		// Creación de hebras:
 		for (int j = 0; j < 3; j++)
