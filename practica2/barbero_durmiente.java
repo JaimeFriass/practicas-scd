@@ -5,8 +5,8 @@ class Barberia extends AbstractMonitor {
 	
 	public static int cola;
 	public static boolean cortando;
-	private Condition barberpo = makeCondition();
-	private Condition cortar = makeCondition();
+	private Condition barbero = makeCondition();
+	private Condition clientes = makeCondition();
 
 	public Barberia() {
 		cola = 0;
@@ -19,11 +19,11 @@ class Barberia extends AbstractMonitor {
 			cola++;
 			if (cortando) {
 				System.out.println("Cliente " + n_cliente + " espera.");
-				sentarse.await();
+				clientes.await();
 			}
 			cortando = true;
 			System.out.println("Cliente " + n_cliente + " empieza a cortarse el pelo.");
-			cortar.signal();
+			barbero.signal();
 		leave();
 	}
 	// invocado por el barbero para esperar (si procede) a un nuevo
@@ -32,7 +32,7 @@ class Barberia extends AbstractMonitor {
 		enter();
 			// Si no hay nadie esperando, barbero espera
 			if (cola == 0)
-				cortar.await();
+				barbero.await();
 			cola--;
 			cortando = true;
 		leave();
@@ -43,7 +43,7 @@ class Barberia extends AbstractMonitor {
 		enter();
 			System.out.println("Cliente ha terminado de cortarse el pelo.");
 			cortando = false;
-			sentarse.signal();
+			clientes.signal();
 		leave();
 	}
 }
@@ -75,7 +75,7 @@ class Cliente implements Runnable {
 
 	public void run () {
 		while (true) {
-			barberia.cortarPelo(); // el cliente espera (si procede) y se corta el pelo
+			barberia.cortarPelo(n_cliente); // el cliente espera (si procede) y se corta el pelo
 			aux.dormir_max(2000); // el cliente está fuera de la barberia un tiempo
 		}
 	}
@@ -84,6 +84,12 @@ class Cliente implements Runnable {
 class Barbero implements Runnable {
 	public Thread thr;
 	private Barberia barberia;
+
+	public Barbero (Barberia p_barberia) {
+		barberia = p_barberia;
+		thr = new Thread(this, "Barbero");
+	}
+
 	public void run () {
 		while (true) {
 			barberia.siguienteCliente();
@@ -102,6 +108,8 @@ class Main {
 
 		int numero_clientes = Integer.parseInt(args[0]);
 		Cliente clientes[] = new Cliente[numero_clientes];
+		Barberia barberia = new Barberia();
+		Barbero barbero = new Barbero(barberia);
 
 		for (int i = 0; i < numero_clientes; i++)
 			clientes[i] = new Cliente(barberia, i);
