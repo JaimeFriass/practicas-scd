@@ -5,7 +5,7 @@ class Barberia extends AbstractMonitor {
 	
 	public static int cola;
 	public static boolean cortando;
-	private Condition sentarse = makeCondition();
+	private Condition barberpo = makeCondition();
 	private Condition cortar = makeCondition();
 
 	public Barberia() {
@@ -13,13 +13,6 @@ class Barberia extends AbstractMonitor {
 		cortando = false;
 	}
 
-	public Barberia (int clientes){
-		barbero = makeCondition();
-		cliente = new Condition[clientes];
-
-		for (int i = 0; i < clientes; i++)
-			cliente[i] = makeCondition();
-	}
 	// invocado por los clientes para cortarse el pelo
 	public void cortarPelo(int n_cliente) {
 		enter();
@@ -28,6 +21,7 @@ class Barberia extends AbstractMonitor {
 				System.out.println("Cliente " + n_cliente + " espera.");
 				sentarse.await();
 			}
+			cortando = true;
 			System.out.println("Cliente " + n_cliente + " empieza a cortarse el pelo.");
 			cortar.signal();
 		leave();
@@ -94,7 +88,7 @@ class Barbero implements Runnable {
 		while (true) {
 			barberia.siguienteCliente();
 			aux.dormir_max(2500); // el barbero está cortando el pelo
-			barberia.finCliente;
+			barberia.finCliente();
 		}
 	}
 }
