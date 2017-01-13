@@ -3,6 +3,8 @@
 #include <unistd.h>    // incluye "usleep"
 #include <stdlib.h>    // incluye "rand" y "srand"
 #include <mpi.h>
+#define soltar     0
+#define coger      1
 
 using namespace std;
 
@@ -20,6 +22,7 @@ int main( int argc, char** argv )
    MPI_Comm_rank( MPI_COMM_WORLD, &rank );
    MPI_Comm_size( MPI_COMM_WORLD, &size );
    
+   // Comprobamos que se introducen los correspondientes procesos
    if( size!=10)
    {
       if( rank == 0) 
@@ -28,8 +31,8 @@ int main( int argc, char** argv )
       return 0; 
    }
    
-   if ((rank%2) == 0)  
-      Filosofo(rank,size); // Los pares son Filosofos 
+   if ((rank%2) == 0)
+   	  Filosofo(rank, size); // Los pares son Filosofos 
    else 
       Tenedor(rank,size);  // Los impares son Tenedores 
    
@@ -40,49 +43,54 @@ int main( int argc, char** argv )
 
 void Filosofo( int id, int nprocesos )
 {
-   int izq = (id+1) % nprocesos;
-   int der = ((id+nprocesos)-1) % nprocesos;
+   int izq = (id+1) % 10;
+   int der = ((id+10)-1) % 10;
    int solicitud;
    
    while(1)
    {
-      // Solicita tenedor izquierdo
+   		solicitud = 1;
+   	    // Como el primer filósofo debe solicitar primero el tenedor derecho
+   		if ( id == 0) {	// Si es el primer filósofo
 
-   	  // Como el primer filósofo debe solicitar primero el tenedor derecho
-   		if ( id == 0) {	// Si el id es 0
-   			cout << "Filosofo 1 solicita tenedor der ..." << der << endl << flush;
-   			MPI_Ssend( &solicitud, 1, MPI_INT, der, 0, MPI_COMM_WORLD);
+   			cout << "Filosofo " << id << " solicita tenedor der ..." << der << endl << flush;
+   			MPI_Ssend( &solicitud, 0, MPI_INT, der, coger, MPI_COMM_WORLD);	// Envia solicitud 1 a der
+
    		} else {
+
    			cout << "Filósofo " << id << " solicita tenedor izq ..." << izq << endl << flush;
-   			MPI_Ssend( &solicitud, 1, MPI_INT, izq, 0, MPI_COMM_WORLD);
+   			MPI_Ssend( &solicitud, 0, MPI_INT, izq, coger, MPI_COMM_WORLD); // Envia solicitud 1 a izq
+
    		}
 
    		if ( id == 0 ) {	// Si es el primer fílósofo
+
    			cout << "Filósofo " << id << " solicita tenedor izq ..." << izq << endl<< flush;
-   			MPI_Ssend( &solicitud, 1, MPI_INT, izq, 0, MPI_COMM_WORLD);
+   			MPI_Ssend( &solicitud, 0, MPI_INT, izq, coger, MPI_COMM_WORLD);  // Envia solicitud 1 a izq
+
    		} else {
+
    			cout << "Filósofo " << id << " solicita tenedor der ..." << der << endl <<flush;
-   			MPI_Ssend( &solicitud, 1, MPI_INT, der, 0, MPI_COMM_WORLD);
+   			MPI_Ssend( &solicitud, 0, MPI_INT, der, coger, MPI_COMM_WORLD);	// Envia solicitud 1 a der
+
    		}
 
+   		// Empieza a comer
    		cout << "Filosofo " << id << " COMIENDO" << endl << flush;
-   		slee
-      	sleep((rand() % 3)+1);  //comiendo
-      
-      // Suelta el tenedor izquierdo
-      cout <<"Filosofo "<<id<< " suelta tenedor izq ..." << izq << endl << flush;
-      // ...
-      
-      // Suelta el tenedor derecho
-      cout <<"Filosofo "<<id<< " suelta tenedor der ..." << der << endl << flush;
-      // ...
-      
-      // Piensa (espera bloqueada aleatorio del proceso)
-      cout << "Filosofo " << id << " PENSANDO" << endl << flush;
-      
-      // espera bloqueado durante un intervalo de tiempo aleatorio 
-      // (entre una décima de segundo y un segundo)
-      usleep( 1000U * (100U+(rand()%900U)) );
+      	sleep((rand() % 3)+1);	// Intervalo de tiempo aleatorio
+      	solicitud = 0;	// Se cambia la solicitud
+      	cout << "Filósofo " << id << " TERMINA DE COMER" << endl << flush;
+
+      	cout << "Filósofo " << id << " suelta tenedor izq " << izq << endl << flush;
+      	MPI_Ssend( &solicitud, 0, MPI_INT, izq, soltar, MPI_COMM_WORLD);
+
+      	cout << "Filósofo " << id << " suelta tenedor der ..." << der << endl << flush;
+      	MPI_Ssend( &solicitud, 0, MPI_INT, der, soltar, MPI_COMM_WORLD);
+
+      	// PIENSA
+        cout << "Filosofo " << id << " PENSANDO" << BLACK << endl;
+        sleep((rand()%3)+1);
+
  }
 }
 // ---------------------------------------------------------------------
@@ -91,7 +99,7 @@ void Tenedor(int id, int nprocesos)
 {
   int buf; 
   MPI_Status status; 
-  int Filo;
+  int Filosofo;
 
    int izq = (id+1) % nprocesos;
    int der = ((id+nprocesos)-1) % nprocesos;  
@@ -99,17 +107,16 @@ void Tenedor(int id, int nprocesos)
   while( true )
   {
     // Espera un peticion desde cualquier filosofo vecino ...
-    // ...
-    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-    if (status.MPI_SOURCE)
+    MPI_Recv( &buf, 1, MPI_INT, MPI_ANY_SOURCE, coger, MPI_COMM_WORLD, &status);
+
     // Recibe la peticion del filosofo ...
-    // ...
-    
-    cout << "Ten. " << id << " recibe petic. de " << Filo << endl << flush;
+    Filosofo = status.MPI_SOURCE;
+    cout << "Ten. " << id << " recibe petic. de " << Filosofo << endl << flush;
     
     // Espera a que el filosofo suelte el tenedor...
-    // ...
-    cout << "Ten. " << id << " recibe liberac. de " << Filo << endl << flush; 
+    MPI_Recv(&Filosofo, 1, MPI_INT, Filosofo, soltar, MPI_COMM_WORLD, &status);
+    cout << "Ten. " << id << " recibe liberac. de " << Filosofo << endl << flush; 
   }
 }
+
 // ---------------------------------------------------------------------
